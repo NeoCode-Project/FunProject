@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Манго Ранер</title>
+<style>
+  :root{ --hot:#ff6b00; --acid:#d4ff00; --deep:#1a0033; --pink:#ff2e88; --gold:#ffd700; }
+  *{box-sizing:border-box; user-select:none; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; height:100%; overflow:hidden;
+    background: radial-gradient(circle at 50% 0%, #2d0a4e, var(--deep) 75%);
+    font-family:'Arial Black', Impact, sans-serif; color:#fff;
+  }
+  #topBar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 8px 12px; z-index: 5; position:relative;
+  }
+  #topBar a{ color: var(--acid); text-decoration:none; font-size: 13px; }
+  #hud{ display:flex; gap:14px; font-size: clamp(12px,3vw,16px); color: var(--gold); }
+  #stage{
+    position:relative; width:100%; height: calc(100vh - 46px);
+    overflow:hidden; touch-action: none;
+  }
+  #player{
+    position:absolute; bottom: 60px; left: 60px;
+    font-size: 46px; z-index: 5;
+    filter: drop-shadow(0 0 10px rgba(255,140,0,.7));
+  }
+  .obstacle, .pickup{
+    position:absolute; bottom: 60px; font-size: 40px; z-index: 4;
+  }
+  .pickup{ font-size: 32px; }
+  #ground{
+    position:absolute; bottom:0; left:0; width:100%; height:60px;
+    background: linear-gradient(#3a1a5c, #1a0033);
+    border-top: 3px solid var(--acid);
+  }
+  #titleMsg{
+    position:absolute; top: 40%; left:50%; transform: translate(-50%,-50%);
+    text-align:center; z-index: 10;
+  }
+  #titleMsg h1{ color: var(--acid); font-size: clamp(22px,7vw,40px); text-shadow: 0 0 10px var(--hot), 3px 3px 0 #000; }
+  #titleMsg p{ color:#ddd; font-size: clamp(12px,3vw,15px); }
+  .startBtn{
+    margin-top: 14px; background: var(--pink); color:#fff; border:none;
+    padding: 12px 22px; border-radius: 24px; font-size: 15px; font-weight:bold; cursor:pointer;
+  }
+  #gameOverBox{
+    position:absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+    text-align:center; z-index: 20; display:none;
+    background: rgba(20,0,40,.92); border: 2px solid var(--acid); border-radius: 18px;
+    padding: 24px 28px;
+  }
+  #gameOverBox h2{ color: var(--pink); font-size: clamp(20px,6vw,32px); margin: 0 0 8px; }
+  #gameOverBox p{ color: var(--gold); font-size: clamp(14px,3.6vw,18px); margin: 4px 0; }
+</style>
+</head>
+<body>
+<div id="topBar">
+  <a href="index.html">← в меню</a>
+  <div id="hud"><span id="scoreVal">Счёт: 0</span><span id="mangoVal">🥭 0</span></div>
+  <a href="clicker.html">Кликер →</a>
+</div>
+<div id="stage">
+  <div id="titleMsg">
+    <h1>🏃 МАНГО РАНЕР</h1>
+    <p>Прыгай через гнилые манго 🤢, лови золотые 🥭<br>Пробел / тап / ↑ — прыжок</p>
+    <button class="startBtn" id="startBtn">Начать забег</button>
+  </div>
+  <div id="gameOverBox">
+    <h2>ГНИЛЬ ПОБЕДИЛА</h2>
+    <p id="finalScore"></p>
+    <p id="bestScore"></p>
+    <button class="startBtn" id="restartBtn">Ещё раз</button>
+  </div>
+  <div id="player">🥭</div>
+  <div id="ground"></div>
+</div>
+<script>
+const stage = document.getElementById('stage');
+const player = document.getElementById('player');
+const scoreVal = document.getElementById('scoreVal');
+const mangoVal = document.getElementById('mangoVal');
+const titleMsg = document.getElementById('titleMsg');
+const gameOverBox = document.getElementById('gameOverBox');
+
+let running = false;
+let velY = 0, posY = 0;
+const gravity = 0.9, jumpForce = 17;
+let onGround = true;
+let score = 0, mangoCount = 0;
+let speed = 6;
+let spawnTimer = 0;
+let items = [];
+let best = 0;
+try{ best = parseInt(localStorage.getItem('mangoRunnerBest')||'0'); }catch(e){}
+
+function jump(){
+  if(!running) return;
+  if(onGround){ velY = jumpForce; onGround = false; }
+}
+document.addEventListener('keydown', (e)=>{ if(e.code==='Space'||e.code==='ArrowUp') jump(); });
+stage.addEventListener('pointerdown', jump);
+
+function spawnItem(){
+  const isBad = Math.random() < 0.65;
+  const el = document.createElement('div');
+  el.className = isBad ? 'obstacle' : 'pickup';
+  el.textContent = isBad ? (Math.random()<0.5?'🤢':'💀') : (Math.random()<0.5?'🥭':'✨');
+  el.style.right = '-60px';
+  const groundH = 60;
+  const floatY = isBad ? 0 : (Math.random()<0.5 ? 70 : 0);
+  el.style.bottom = (groundH + floatY) + 'px';
+  stage.appendChild(el);
+  items.push({el, x: stage.clientWidth+60, bad: isBad, floatY});
+}
+
+function resetGame(){
+  items.forEach(i=>i.el.remove()); items = [];
+  score = 0; mangoCount = 0; speed = 6; spawnTimer = 0; posY = 0; velY = 0; onGround = true;
+  player.style.bottom = '60px';
+  scoreVal.textContent = 'Счёт: 0';
+  mangoVal.textContent = '🥭 0';
+}
+
+function endGame(){
+  running = false;
+  if(score > best){ best = score; try{ localStorage.setItem('mangoRunnerBest', String(best)); }catch(e){} }
+  document.getElementById('finalScore').textContent = 'Счёт: ' + score + '   🥭 ' + mangoCount;
+  document.getElementById('bestScore').textContent = 'Рекорд: ' + best;
+  gameOverBox.style.display = 'block';
+}
+
+function loop(){
+  if(!running) return;
+  score += 1;
+  speed += 0.0025;
+  scoreVal.textContent = 'Счёт: ' + score;
+
+  velY -= gravity;
+  posY += velY;
+  if(posY <= 0){ posY = 0; velY = 0; onGround = true; }
+  player.style.bottom = (60 + posY) + 'px';
+
+  spawnTimer -= 1;
+  if(spawnTimer <= 0){ spawnItem(); spawnTimer = Math.max(35, 70 - speed*3); }
+
+  const pRect = { left: 60, right: 60+46, bottom: 60+posY, top: 60+posY+46 };
+  for(let i = items.length-1; i>=0; i--){
+    const it = items[i];
+    it.x -= speed;
+    it.el.style.right = (stage.clientWidth - it.x) + 'px';
+    if(it.floaty !== undefined){}
+    const iLeft = it.x, iRight = it.x+40;
+    const iBottom = 60 + (it.floatY||0), iTop = iBottom+40;
+    const overlapX = iLeft < pRect.right && iRight > pRect.left;
+    const overlapY = iBottom < pRect.top && iTop > pRect.bottom;
+    if(overlapX && overlapY){
+      if(it.bad){ it.el.remove(); items.splice(i,1); endGame(); return; }
+      else { mangoCount++; mangoVal.textContent = '🥭 ' + mangoCount; score += 15; it.el.remove(); items.splice(i,1); continue; }
+    }
+    if(it.x < -80){ it.el.remove(); items.splice(i,1); }
+  }
+  requestAnimationFrame(loop);
+}
+
+function startGame(){
+  titleMsg.style.display = 'none';
+  gameOverBox.style.display = 'none';
+  resetGame();
+  running = true;
+  requestAnimationFrame(loop);
+}
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('restartBtn').addEventListener('click', startGame);
+</script>
+</body>
+</html>

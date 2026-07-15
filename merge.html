@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Манго 2048</title>
+<style>
+  :root{ --hot:#ff6b00; --acid:#d4ff00; --deep:#1a0033; --pink:#ff2e88; --gold:#ffd700; }
+  *{box-sizing:border-box; user-select:none; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background: radial-gradient(circle at 50% 0%, #2d0a4e, var(--deep) 75%);
+    font-family:'Arial Black', Impact, sans-serif; color:#fff;
+    touch-action: none;
+  }
+  #topBar{ display:flex; justify-content:space-between; align-items:center; padding: 10px 14px; }
+  #topBar a{ color: var(--acid); text-decoration:none; font-size: 13px; }
+  h1{ text-align:center; color: var(--acid); font-size: clamp(20px,6vw,32px); text-shadow: 0 0 10px var(--hot), 3px 3px 0 #000; margin: 4px 0 2px; }
+  #hud{ text-align:center; color: var(--gold); font-size: clamp(13px,3.4vw,17px); margin-bottom: 12px; }
+  #boardWrap{ display:flex; justify-content:center; }
+  #board{
+    position:relative;
+    width: min(94vw, 420px); height: min(94vw, 420px);
+    background: rgba(255,255,255,.05);
+    border-radius: 14px; padding: 8px;
+    display:grid; grid-template-columns: repeat(4,1fr); grid-template-rows: repeat(4,1fr);
+    gap: 8px;
+  }
+  .bgCell{ background: rgba(255,255,255,.04); border-radius: 10px; }
+  .tile{
+    position:absolute;
+    display:flex; align-items:center; justify-content:center;
+    border-radius: 10px;
+    font-weight:bold;
+    transition: left .1s ease, top .1s ease, transform .1s ease;
+    flex-direction: column;
+  }
+  .tile .emoji{ font-size: 65%; }
+  .tile .val{ font-size: 38%; opacity:.85; }
+  #controls{ text-align:center; margin-top: 14px; color:#ccc; font-size: 12px; }
+  #msgBox{
+    display:none; text-align:center; margin-top: 16px;
+  }
+  #msgBox h2{ color: var(--pink); font-size: clamp(20px,6vw,30px); }
+  .startBtn{
+    margin-top: 10px; background: var(--pink); color:#fff; border:none;
+    padding: 10px 20px; border-radius: 22px; font-size: 14px; font-weight:bold; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div id="topBar">
+  <a href="index.html">← в меню</a>
+  <a href="clicker.html">Кликер →</a>
+</div>
+<h1>🔢 МАНГО 2048</h1>
+<div id="hud">Счёт: <span id="scoreVal">0</span> &nbsp; Рекорд: <span id="bestVal">0</span></div>
+<div id="boardWrap"><div id="board"></div></div>
+<div id="controls">Свайп или стрелки — двигай манго и сливай одинаковые. Дойди до 67-плитки!</div>
+<div id="msgBox">
+  <h2 id="msgTitle"></h2>
+  <button class="startBtn" id="restartBtn">Начать заново</button>
+</div>
+<script>
+const SIZE = 4;
+const board = document.getElementById('board');
+const scoreVal = document.getElementById('scoreVal');
+const bestVal = document.getElementById('bestVal');
+const msgBox = document.getElementById('msgBox');
+const msgTitle = document.getElementById('msgTitle');
+
+let grid = [];
+let score = 0, best = 0, wonShown = false;
+try{ best = parseInt(localStorage.getItem('mango2048Best')||'0'); }catch(e){}
+bestVal.textContent = best;
+
+const valueLabels = {2:'2',4:'4',8:'8',16:'16',32:'32',64:'67!',128:'128',256:'256',512:'512',1024:'1024',2048:'2048'};
+const valueEmoji = {2:'🥭',4:'🥭',8:'🍊',16:'🍋',32:'🍍',64:'✨',128:'🌟',256:'💎',512:'👑',1024:'🔥',2048:'🌌'};
+const valueColor = {
+  2:'#5b2a86',4:'#6b1f9e',8:'#ff6b00',16:'#ff8c1a',32:'#ff2e88',
+  64:'#ffd700',128:'#00d4ff',256:'#d4ff00',512:'#ff2200',1024:'#8a2be2',2048:'#ffffff'
+};
+
+function emptyGrid(){ return Array.from({length:SIZE}, ()=> Array(SIZE).fill(0)); }
+
+function addRandomTile(){
+  const empties = [];
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(grid[r][c]===0) empties.push([r,c]);
+  if(empties.length===0) return;
+  const [r,c] = empties[Math.floor(Math.random()*empties.length)];
+  grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+}
+
+function cellSize(){
+  const bw = board.clientWidth - 16;
+  return (bw - 8*3) / 4;
+}
+
+function render(){
+  board.querySelectorAll('.tile, .bgCell').forEach(e=>e.remove());
+  for(let i=0;i<16;i++){ const bg=document.createElement('div'); bg.className='bgCell'; board.appendChild(bg); }
+  const cs = cellSize();
+  for(let r=0;r<SIZE;r++){
+    for(let c=0;c<SIZE;c++){
+      const v = grid[r][c];
+      if(v===0) continue;
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.style.width = cs+'px'; tile.style.height = cs+'px';
+      tile.style.left = (8 + c*(cs+8)) + 'px';
+      tile.style.top = (8 + r*(cs+8)) + 'px';
+      tile.style.background = valueColor[v] || '#333';
+      tile.style.color = v>=64 ? '#1a0033' : '#fff';
+      const label = valueLabels[v] || v;
+      tile.innerHTML = `<div class="emoji">${valueEmoji[v]||'🥭'}</div><div class="val">${label}</div>`;
+      board.appendChild(tile);
+      if(v===64 && !wonShown){
+        wonShown = true;
+        setTimeout(()=>{ msgTitle.textContent = '🎉 ТЫ ДОБРАЛСЯ ДО 67! ПЕРЕДОЗИРОВКА!'; msgBox.style.display='block'; }, 200);
+      }
+    }
+  }
+  scoreVal.textContent = score;
+  if(score > best){ best = score; bestVal.textContent = best; try{ localStorage.setItem('mango2048Best', String(best)); }catch(e){} }
+}
+
+function slideRow(row){
+  let arr = row.filter(v=>v!==0);
+  let gained = 0;
+  for(let i=0;i<arr.length-1;i++){
+    if(arr[i] === arr[i+1]){
+      arr[i]*=2; gained += arr[i]; arr.splice(i+1,1);
+    }
+  }
+  while(arr.length < SIZE) arr.push(0);
+  return {arr, gained};
+}
+
+function rotateGrid(g){
+  const ng = emptyGrid();
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) ng[c][SIZE-1-r] = g[r][c];
+  return ng;
+}
+
+function move(dir){
+  let changed = false;
+  let g = grid.map(r=>[...r]);
+  let rotations = {left:0, up:1, right:2, down:3}[dir];
+  for(let i=0;i<rotations;i++) g = rotateGrid(g);
+
+  for(let r=0;r<SIZE;r++){
+    const {arr, gained} = slideRow(g[r]);
+    if(arr.join(',') !== g[r].join(',')) changed = true;
+    g[r] = arr;
+    score += gained;
+  }
+  for(let i=0;i<(4-rotations)%4;i++) g = rotateGrid(g);
+  grid = g;
+  if(changed){ addRandomTile(); render(); checkGameOver(); }
+}
+
+function canMove(){
+  for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+    if(grid[r][c]===0) return true;
+    if(c<SIZE-1 && grid[r][c]===grid[r][c+1]) return true;
+    if(r<SIZE-1 && grid[r][c]===grid[r+1][c]) return true;
+  }
+  return false;
+}
+function checkGameOver(){
+  if(!canMove()){
+    msgTitle.textContent = '💀 МАНГО ЗАКОНЧИЛИСЬ. Счёт: ' + score;
+    msgBox.style.display = 'block';
+  }
+}
+
+document.addEventListener('keydown', (e)=>{
+  const map = {ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down'};
+  if(map[e.key]){ e.preventDefault(); move(map[e.key]); }
+});
+
+let touchStartX=0, touchStartY=0;
+board.addEventListener('touchstart', (e)=>{ touchStartX=e.touches[0].clientX; touchStartY=e.touches[0].clientY; }, {passive:true});
+board.addEventListener('touchend', (e)=>{
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if(Math.abs(dx) < 20 && Math.abs(dy) < 20) return;
+  if(Math.abs(dx) > Math.abs(dy)) move(dx>0 ? 'right':'left');
+  else move(dy>0 ? 'down':'up');
+}, {passive:true});
+
+function startGame(){
+  grid = emptyGrid(); score = 0; wonShown = false;
+  addRandomTile(); addRandomTile();
+  msgBox.style.display = 'none';
+  render();
+}
+document.getElementById('restartBtn').addEventListener('click', startGame);
+window.addEventListener('resize', render);
+startGame();
+</script>
+</body>
+</html>

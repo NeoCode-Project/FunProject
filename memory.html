@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Манго Мемори</title>
+<style>
+  :root{ --hot:#ff6b00; --acid:#d4ff00; --deep:#1a0033; --pink:#ff2e88; --gold:#ffd700; }
+  *{box-sizing:border-box; user-select:none; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background: radial-gradient(circle at 50% 0%, #2d0a4e, var(--deep) 75%);
+    font-family:'Arial Black', Impact, sans-serif; color:#fff;
+  }
+  #topBar{ display:flex; justify-content:space-between; align-items:center; padding: 10px 14px; }
+  #topBar a{ color: var(--acid); text-decoration:none; font-size: 13px; }
+  h1{ text-align:center; color: var(--acid); font-size: clamp(20px,6vw,32px); text-shadow: 0 0 10px var(--hot), 3px 3px 0 #000; margin: 4px 0 2px; }
+  #hud{ text-align:center; color: var(--gold); font-size: clamp(12px,3vw,15px); margin-bottom: 14px; }
+  #board{
+    display:grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px; max-width: 420px; margin: 0 auto; padding: 0 14px;
+  }
+  .cell{
+    aspect-ratio: 1/1; border-radius: 12px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size: clamp(24px, 8vw, 38px);
+    background: linear-gradient(145deg, #3a1a5c, #24063d);
+    border: 2px solid rgba(255,255,255,.15);
+    transition: transform .25s;
+  }
+  .cell.flipped{ background: rgba(255,255,255,.1); border-color: var(--acid); }
+  .cell.matched{ background: rgba(212,255,0,.12); border-color: var(--gold); opacity:.7; cursor:default; }
+  #winBox{
+    display:none; text-align:center; margin-top: 20px;
+  }
+  #winBox h2{ color: var(--pink); font-size: clamp(20px,6vw,30px); }
+  #winBox p{ color: var(--gold); }
+  .startBtn{
+    margin-top: 10px; background: var(--pink); color:#fff; border:none;
+    padding: 10px 20px; border-radius: 22px; font-size: 14px; font-weight:bold; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div id="topBar">
+  <a href="index.html">← в меню</a>
+  <a href="merge.html">2048 →</a>
+</div>
+<h1>🧠 МАНГО МЕМОРИ</h1>
+<div id="hud"><span id="movesVal">Ходы: 0</span> &nbsp; <span id="timeVal">Время: 0с</span></div>
+<div id="board"></div>
+<div id="winBox">
+  <h2>ВСЕ ПАРЫ НАЙДЕНЫ! 🥭</h2>
+  <p id="winStats"></p>
+  <button class="startBtn" id="restartBtn">Играть снова</button>
+</div>
+<script>
+const emojis = ['🥭','🍊','🍋','🍍','🍌','🍑','🍇','🍓'];
+const board = document.getElementById('board');
+const movesVal = document.getElementById('movesVal');
+const timeVal = document.getElementById('timeVal');
+const winBox = document.getElementById('winBox');
+
+let cards = [], flipped = [], matchedCount = 0, moves = 0, timer = 0, timerInt = null, lock = false;
+
+function shuffle(arr){
+  for(let i=arr.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+
+function buildBoard(){
+  board.innerHTML = '';
+  winBox.style.display = 'none';
+  cards = shuffle([...emojis, ...emojis]);
+  flipped = []; matchedCount = 0; moves = 0; timer = 0; lock = false;
+  movesVal.textContent = 'Ходы: 0';
+  timeVal.textContent = 'Время: 0с';
+  if(timerInt) clearInterval(timerInt);
+  let started = false;
+
+  cards.forEach((emoji, idx)=>{
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.idx = idx;
+    cell.textContent = '🥭';
+    cell.style.filter = 'grayscale(1) brightness(.5)';
+    cell.addEventListener('click', ()=>{
+      if(lock || cell.classList.contains('flipped') || cell.classList.contains('matched')) return;
+      if(!started){ started = true; timerInt = setInterval(()=>{ timer++; timeVal.textContent = 'Время: ' + timer + 'с'; }, 1000); }
+      cell.classList.add('flipped');
+      cell.textContent = emoji;
+      cell.style.filter = 'none';
+      flipped.push({cell, emoji, idx});
+      if(flipped.length === 2){
+        moves++; movesVal.textContent = 'Ходы: ' + moves;
+        lock = true;
+        const [a,b] = flipped;
+        if(a.emoji === b.emoji){
+          a.cell.classList.add('matched'); b.cell.classList.add('matched');
+          matchedCount++;
+          flipped = []; lock = false;
+          if(matchedCount === emojis.length){
+            clearInterval(timerInt);
+            document.getElementById('winStats').textContent = 'Ходы: ' + moves + '   Время: ' + timer + 'с';
+            winBox.style.display = 'block';
+          }
+        } else {
+          setTimeout(()=>{
+            a.cell.classList.remove('flipped'); a.cell.textContent='🥭'; a.cell.style.filter='grayscale(1) brightness(.5)';
+            b.cell.classList.remove('flipped'); b.cell.textContent='🥭'; b.cell.style.filter='grayscale(1) brightness(.5)';
+            flipped = []; lock = false;
+          }, 700);
+        }
+      }
+    });
+    board.appendChild(cell);
+  });
+}
+
+document.getElementById('restartBtn').addEventListener('click', buildBoard);
+buildBoard();
+</script>
+</body>
+</html>

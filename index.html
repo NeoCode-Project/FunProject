@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>МАНГОВСЕЛЕННАЯ 67</title>
+<style>
+  :root{ --hot:#ff6b00; --acid:#d4ff00; --deep:#1a0033; --pink:#ff2e88; --gold:#ffd700; }
+  *{box-sizing:border-box; user-select:none;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background: radial-gradient(circle at 50% 10%, #2d0a4e, var(--deep) 75%);
+    font-family:'Arial Black', Impact, sans-serif; color:#fff;
+  }
+  #wrap{ max-width: 760px; margin: 0 auto; padding: 22px 16px 40px; }
+  h1{
+    text-align:center; color: var(--acid); font-size: clamp(24px,7vw,44px);
+    text-shadow: 0 0 10px var(--hot), 0 0 30px var(--pink), 3px 3px 0 #000;
+    transform: rotate(-1.5deg); margin-bottom: 4px;
+  }
+  #sub{ text-align:center; color:#ddd; font-size: clamp(12px,3vw,15px); margin-bottom: 26px; opacity:.85; }
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 480px){ .grid{ grid-template-columns: 1fr; } }
+  .card{
+    background: rgba(255,255,255,.06);
+    border: 2px solid rgba(255,255,255,.15);
+    border-radius: 18px;
+    padding: 18px;
+    text-decoration:none;
+    color:#fff;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    gap:8px;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .card:hover, .card:active{ transform: translateY(-4px) scale(1.02); border-color: var(--acid); }
+  .card .emoji{ font-size: 54px; filter: drop-shadow(0 0 14px rgba(255,140,0,.6)); }
+  .card .name{ font-size: clamp(16px,4vw,20px); color: var(--gold); }
+  .card .desc{ font-size: clamp(11px,2.8vw,13px); color:#ccc; opacity:.85; }
+  .badge{
+    display:inline-block; margin-top:4px; font-size: 10px; letter-spacing:1px;
+    background: var(--pink); padding: 3px 8px; border-radius: 10px; color:#fff;
+  }
+  footer{ text-align:center; margin-top: 30px; color:#888; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <h1>🥭 МАНГОВСЕЛЕННАЯ 67 🥭</h1>
+  <div id="sub">выбери игру — все они про манго, и ни одна не обходится без передозировки</div>
+  <div class="grid">
+    <a class="card" href="clicker.html">
+      <div class="emoji">🥭</div>
+      <div class="name">Манго Кликер</div>
+      <div class="desc">Кликай, качайся, переродись. Магазин, престиж, золотое манго.</div>
+      <span class="badge">ИДЛ-КЛИКЕР</span>
+    </a>
+    <a class="card" href="runner.html">
+      <div class="emoji">🏃</div>
+      <div class="name">Манго Ранер</div>
+      <div class="desc">Беги, прыгай через гнилые манго, лови золотые.</div>
+      <span class="badge">АРКАДА</span>
+    </a>
+    <a class="card" href="memory.html">
+      <div class="emoji">🧠</div>
+      <div class="name">Манго Мемори</div>
+      <div class="desc">Найди все пары фруктов на скорость и с наименьшим числом ходов.</div>
+      <span class="badge">ГОЛОВОЛОМКА</span>
+    </a>
+    <a class="card" href="merge.html">
+      <div class="emoji">🔢</div>
+      <div class="name">Манго 2048</div>
+      <div class="desc">Соединяй манго, чтобы дорасти до легендарной плитки 67.</div>
+      <span class="badge">СТРАТЕГИЯ</span>
+    </a>
+  </div>
+  <footer>сделано с передозировкой любви к манго 🥭</footer>
+</div>
+</body>
+</html>
