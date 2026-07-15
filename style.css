@@ -10,11 +10,10 @@ body {
   padding: 0;
   background-color: var(--bg-color);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  overflow: hidden; /* Prevents scrollbars during effects */
+  overflow: hidden;
   user-select: none;
 }
 
-/* Main Game Area */
 #app {
   width: 100vw;
   height: 100vh;
@@ -23,22 +22,20 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: transform 0.1s;
 }
 
-/* The Big Mango Target */
 #bigMango {
   font-size: 200px;
   cursor: pointer;
   transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 10;
+  user-select: none;
 }
 
 #bigMango:active {
-  transform: scale(0.9) rotate(5deg);
+  transform: scale(0.9) rotate(10deg);
 }
 
-/* UI Elements */
 .counter-container {
   position: absolute;
   top: 20px;
@@ -46,24 +43,30 @@ body {
 }
 
 #countLabel {
-  font-size: 64px;
-  font-weight: bold;
-  color: var(--mango-orange);
+  font-size: 80px;
   margin: 0;
+  color: var(--mango-orange);
 }
 
 .subMessage {
-  font-size: 18px;
+  font-size: 20px;
+  margin: 0;
   color: #777;
 }
 
-#comboText {
-  height: 30px;
-  color: red;
-  font-weight: bold;
+#shopBtn {
+  position: absolute;
+  bottom: 30px;
+  padding: 15px 30px;
+  font-size: 20px;
+  background: var(--mango-orange);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
 }
 
-/* Shop Overlay */
+/* Shop Styling */
 #shopOverlay {
   position: fixed;
   inset: 0;
@@ -84,33 +87,13 @@ body {
 
 .shopWindow {
   background: white;
-  padding: 20px;
-  border-radius: 20px;
+  padding: 30px;
+  border-radius: 25px;
   width: 90%;
   max-width: 400px;
   text-align: center;
 }
 
-.tabBtns {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.tabBtn {
-  padding: 10px 20px;
-  border: none;
-  background: #ddd;
-  border-radius: 10px;
-  cursor: pointer;
-}
-
-.tabBtn.active {
-  background: var(--mango-orange);
-  color: white;
-}
-
-/* Shop Items List */
 .shopItem {
   display: flex;
   align-items: center;
@@ -119,22 +102,17 @@ body {
   gap: 15px;
 }
 
-.emoji { font-size: 30px; }
+.emoji { font-size: 40px; }
 .info { flex-grow: 1; text-align: left; }
 .item-name { font-weight: bold; font-size: 1.2rem; }
 .item-desc { font-size: 0.8rem; color: #666; }
 
 .buyBtn {
   padding: 10px;
-  border-radius: 5px;
+  border-radius: 10px;
   border: none;
   background: var(--mango-yellow);
   cursor: pointer;
-}
-
-.buyBtn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
 }
 
 /* Animations */
@@ -145,51 +123,16 @@ body {
 
 .rainMango {
   position: absolute;
-  animation: fall linear forwards;
+  animation: fall 2s linear forwards;
   pointer-events: none;
-}
-
-@keyframes flash {
-  0% { background: rgba(255, 255, 255, 0); }
-  50% { background: rgba(255, 255, 255, 0.8); }
-  100% { background: rgba(255, 255, 255, 0); }
-}
-
-.flash {
-  animation: flash 0.3s ease;
 }
 
 @keyframes shake {
   0% { transform: translate(0,0); }
-  25% { transform: translate(5px, 5px); }
-  50% { transform: translate(-5px, -5px); }
-  75% { transform: translate(5px, -5px); }
+  50% { transform: translate(-10px, 10px); }
   100% { transform: translate(0,0); }
 }
 
-.shake {
-  animation: shake 0.2s linear;
+.shake-anim {
+  animation: shake 0.2s ease-in-out;
 }
-
-/* Fly Text */
-.flyMango {
-  position: absolute;
-  font-weight: bold;
-  pointer-events: none;
-  animation: flyUp 1s forwards;
-}
-
-@keyframes flyUp {
-  to { transform: translateY(-50px); opacity: 0; }
-}
-
-.hidden { display: none; }
-
-/* Achievement Styles */
-.achRow {
-  padding: 10px;
-  margin-bottom: 5px;
-  border-radius: 8px;
-  background: #f9f9f9;
-}
-.achRow.done { background: #e8f5e9; color: green; }
