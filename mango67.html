@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>МАНГО 67 — ПЕРЕДОЗИРОВКА</title>
+<style>
+  :root{
+    --hot: #ff6b00;
+    --acid: #d4ff00;
+    --deep: #1a0033;
+    --pink: #ff2e88;
+    --gold: #ffd700;
+  }
+  *{box-sizing:border-box; user-select:none;}
+  html,body{
+    margin:0; padding:0; height:100%; overflow:hidden;
+    background: radial-gradient(circle at 50% 20%, #2d0a4e, var(--deep) 70%);
+    font-family: 'Arial Black', Impact, sans-serif;
+    touch-action: manipulation;
+  }
+  #app{
+    position:relative; width:100%; height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+    justify-content:flex-start; overflow:hidden;
+  }
+  #title{
+    margin-top: 14px;
+    font-size: clamp(24px, 6vw, 48px);
+    color: var(--acid);
+    text-shadow: 0 0 10px var(--hot), 0 0 30px var(--pink), 3px 3px 0 #000;
+    letter-spacing: 2px;
+    text-align:center;
+    z-index: 5;
+    transform: rotate(-2deg);
+    animation: wobble 2.4s ease-in-out infinite;
+  }
+  @keyframes wobble{
+    0%,100%{ transform: rotate(-2deg) scale(1); }
+    50%{ transform: rotate(2deg) scale(1.03); }
+  }
+  #counterWrap{
+    margin-top: 6px;
+    z-index: 5;
+    text-align:center;
+  }
+  #counter{
+    font-size: clamp(48px, 14vw, 110px);
+    color: var(--gold);
+    text-shadow: 0 0 15px var(--hot), 4px 4px 0 #000;
+    line-height: 1;
+  }
+  #sub{
+    color: #fff;
+    font-size: clamp(12px, 3vw, 16px);
+    opacity: .8;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
+  #combo{
+    font-size: clamp(14px, 3.5vw, 20px);
+    color: var(--pink);
+    margin-top: 2px;
+    height: 22px;
+  }
+  #mangoStage{
+    position:relative;
+    flex: 1;
+    width: 100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #bigMango{
+    font-size: clamp(90px, 28vw, 220px);
+    cursor: pointer;
+    filter: drop-shadow(0 0 25px rgba(255,140,0,.7));
+    transition: transform .05s ease-out;
+    z-index: 4;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float{
+    0%,100%{ transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-14px) rotate(4deg); }
+  }
+  #bigMango:active{ transform: scale(.85) rotate(-8deg); }
+  .flyMango{
+    position:absolute;
+    font-size: 28px;
+    pointer-events:none;
+    z-index: 6;
+    animation: rise 1s ease-out forwards;
+  }
+  @keyframes rise{
+    from{ transform: translateY(0) scale(1); opacity:1; }
+    to{ transform: translateY(-140px) scale(1.6); opacity:0; }
+  }
+  .rainMango{
+    position:absolute;
+    top:-60px;
+    font-size: 34px;
+    pointer-events:none;
+    z-index: 3;
+    animation-name: fall;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+  @keyframes fall{
+    from{ transform: translateY(0) rotate(0deg); }
+    to{ transform: translateY(115vh) rotate(720deg); }
+  }
+  #overdoseBanner{
+    position:absolute;
+    top:0; left:0; width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    z-index: 20;
+    pointer-events:none;
+    opacity: 0;
+  }
+  #overdoseBanner span{
+    font-size: clamp(30px, 9vw, 90px);
+    color: #fff;
+    text-shadow: 0 0 20px var(--pink), 0 0 60px var(--hot);
+    text-align:center;
+    padding: 0 10px;
+  }
+  .shake{
+    animation: shakeAnim .4s;
+  }
+  @keyframes shakeAnim{
+    0%,100%{ transform: translate(0,0); }
+    20%{ transform: translate(-14px,10px) rotate(-2deg); }
+    40%{ transform: translate(12px,-10px) rotate(2deg); }
+    60%{ transform: translate(-10px,8px) rotate(-1deg); }
+    80%{ transform: translate(10px,-6px) rotate(1deg); }
+  }
+  .flash{
+    animation: flashAnim .5s;
+  }
+  @keyframes flashAnim{
+    0%{ background: #fff; }
+    100%{ background: transparent; }
+  }
+  #flashLayer{
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    z-index: 15; pointer-events:none; mix-blend-mode: screen;
+  }
+  #resetBtn{
+    position:absolute;
+    bottom: 14px; right: 14px;
+    z-index: 30;
+    background: var(--pink);
+    color: #fff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: .75;
+  }
+  #resetBtn:hover{ opacity: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="title">🥭 СУПЕР ПУПЕР МЕГА МАНГО 67 🥭</div>
+  <div id="counterWrap">
+    <div id="counter">0</div>
+    <div id="sub">манго собрано... давай, жми ещё</div>
+    <div id="combo"></div>
+  </div>
+  <div id="mangoStage">
+    <div id="bigMango">🥭</div>
+  </div>
+  <div id="overdoseBanner"><span id="overdoseText"></span></div>
+  <div id="flashLayer"></div>
+  <button id="resetBtn">сброс</button>
+</div>
+
+<script>
+let count = 0;
+let lastClickTime = 0;
+let comboCount = 0;
+const bigMango = document.getElementById('bigMango');
+const counterEl = document.getElementById('counter');
+const subEl = document.getElementById('sub');
+const comboEl = document.getElementById('combo');
+const app = document.getElementById('app');
+const overdoseBanner = document.getElementById('overdoseBanner');
+const overdoseText = document.getElementById('overdoseText');
+const flashLayer = document.getElementById('flashLayer');
+
+const subMessages = [
+  "манго собрано... давай, жми ещё",
+  "манговый сок уже течёт из ушей",
+  "ты не остановишься, да?",
+  "врачи в панике",
+  "манго уровня БОГ",
+  "это уже не смешно, это МНОГО манго",
+  "67... 67... 67...",
+  "передозировка неизбежна",
+];
+
+function pickSub(){
+  subEl.textContent = subMessages[Math.floor(Math.random()*subMessages.length)];
+}
+
+function spawnFlyMango(x, y){
+  const m = document.createElement('div');
+  m.className = 'flyMango';
+  m.textContent = '🥭';
+  m.style.left = (x - 14) + 'px';
+  m.style.top = (y - 14) + 'px';
+  app.appendChild(m);
+  setTimeout(()=> m.remove(), 1000);
+}
+
+function spawnRain(n){
+  for(let i=0;i<n;i++){
+    setTimeout(()=>{
+      const m = document.createElement('div');
+      m.className = 'rainMango';
+      m.textContent = '🥭';
+      m.style.left = Math.random()*100 + '%';
+      const dur = 1.4 + Math.random()*1.2;
+      m.style.animationDuration = dur + 's';
+      m.style.fontSize = (24 + Math.random()*30) + 'px';
+      app.appendChild(m);
+      setTimeout(()=> m.remove(), dur*1000 + 100);
+    }, i*40);
+  }
+}
+
+function flashScreen(){
+  flashLayer.classList.remove('flash');
+  void flashLayer.offsetWidth;
+  flashLayer.classList.add('flash');
+}
+
+function shakeScreen(){
+  app.classList.remove('shake');
+  void app.offsetWidth;
+  app.classList.add('shake');
+}
+
+function showOverdose(text, big){
+  overdoseText.textContent = text;
+  overdoseText.style.fontSize = big ? 'clamp(36px, 11vw, 110px)' : '';
+  overdoseBanner.style.transition = 'opacity .15s ease';
+  overdoseBanner.style.opacity = 1;
+  setTimeout(()=>{ overdoseBanner.style.transition = 'opacity .8s ease'; overdoseBanner.style.opacity = 0; }, 700);
+}
+
+function checkMilestones(){
+  if(count === 67){
+    showOverdose("67!!! ТЫ НАШЁЛ ЧИСЛО", true);
+    spawnRain(67);
+    shakeScreen();
+    flashScreen();
+    document.title = "МАНГО 67 🥭 НАЙДЕНО";
+  } else if(count % 67 === 0){
+    showOverdose(count + " — ЕЩЁ ОДНО 67!", true);
+    spawnRain(40);
+    shakeScreen();
+    flashScreen();
+  } else if(count === 100){
+    showOverdose("СОТНЯ МАНГО", false);
+    spawnRain(20);
+  } else if(count === 250){
+    showOverdose("МАНГОВЫЙ ШТОРМ", false);
+    spawnRain(35);
+    shakeScreen();
+  } else if(count === 500){
+    showOverdose("КЛИНИЧЕСКАЯ ПЕРЕДОЗИРОВКА МАНГО", false);
+    spawnRain(60);
+    shakeScreen();
+    flashScreen();
+  } else if(count === 1000){
+    showOverdose("1000 МАНГО. ЭТО КОНЕЦ. ЭТО МАНГОГЕДДОН.", true);
+    spawnRain(120);
+    shakeScreen();
+    flashScreen();
+    bigMango.style.animation = 'float 0.4s ease-in-out infinite';
+  } else if(count % 500 === 0){
+    showOverdose(count + " МАНГО. ПРИРОДА ЗЛИТСЯ.", false);
+    spawnRain(80);
+    shakeScreen();
+    flashScreen();
+  }
+}
+
+bigMango.addEventListener('click', (e)=>{
+  const now = Date.now();
+  if(now - lastClickTime < 400){
+    comboCount++;
+  } else {
+    comboCount = 1;
+  }
+  lastClickTime = now;
+
+  count++;
+  counterEl.textContent = count;
+  pickSub();
+
+  const rect = bigMango.getBoundingClientRect();
+  const x = rect.left + rect.width/2 + (Math.random()*60-30);
+  const y = rect.top + rect.height/2;
+  spawnFlyMango(x, y);
+
+  if(comboCount >= 5){
+    comboEl.textContent = "🔥 КОМБО x" + comboCount + " 🔥";
+  } else {
+    comboEl.textContent = "";
+  }
+
+  bigMango.style.transform = 'scale(1.15) rotate(' + (Math.random()*16-8) + 'deg)';
+  setTimeout(()=>{ bigMango.style.transform = ''; }, 90);
+
+  checkMilestones();
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  count = 0;
+  comboCount = 0;
+  counterEl.textContent = 0;
+  comboEl.textContent = "";
+  subEl.textContent = subMessages[0];
+  document.title = "МАНГО 67";
+});
+</script>
+</body>
+</html>
