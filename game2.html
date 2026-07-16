@@ -1,1 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Змейка HTML5</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden; /* Чтобы не появлялись полосы прокрутки */
+        }
 
+        h1 { margin-bottom: 10px; text-shadow: 0 0 10px #4CAF50; }
+
+        #gameCanvas {
+            border: 2px solid #333;
+            background-color: #000;
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+        }
+
+        #ui-container {
+            margin-top: 15px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .score-board { font-size: 18px; }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        button:hover { background-color: #45a049; transform: scale(1.05); }
+        
+        .controls-hint { margin-top: 10px; color: #888; font-size: 14px;}
+    </style>
+</head>
+<body>
+
+    <h1>🐍 Змейка</h1>
+    
+    <!-- Поле игры -->
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+    <div id="ui-container">
+        <div class="score-board">Счет: <span id="score">0</span></div>
+        <button onclick="startGame()">Рестарт</button>
+    </div>
+
+    <p class="controls-hint">Управление: Стрелки на клавиатуре</p>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+
+        // Настройки игры
+        const gridSize = 20; // Размер одной клетки
+        const tileCount = canvas.width / gridSize; // Количество клеток (20x20)
+        
+        let velocityX = 0;
+        let velocityY = 0;
+        let playerX = 10;
+        let playerY = 10;
+        
+        let appleX = 5;
+        let appleY = 5;
+        
+        let trail = []; // Хвост змейки
+        let tailLength = 5; // Начальная длина
+        
+        let score = 0;
+        let gameInterval;
+
+        // Сброс игры на старт
+        function startGame() {
+            playerX = 10;
+            playerY = 10;
+            velocityX = 0;
+            velocityY = 0;
+            trail = [];
+            tailLength = 5;
+            score = 0;
+            scoreElement.innerText = score;
+            
+            // Генерируем яблоко в случайном месте
+            appleX = Math.floor(Math.random() * tileCount);
+            appleY = Math.floor(Math.random() * tileCount);
+
+            // Запуск игрового цикла (15 кадров в секунду для ретро-стиля)
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(drawGame, 1000 / 15);
+        }
+
+        function drawGame() {
+            // Двигаем змейку
+            playerX += velocityX;
+            playerY += velocityY;
+
+            // Логика прохода сквозь стены (телепорт)
+            if (playerX < 0) playerX = tileCount - 1;
+            if (playerX > tileCount - 1) playerX = 0;
+            if (playerY < 0) playerY = tileCount - 1;
+            if (playerY > tileCount - 1) playerY = 0;
+
+            // Фон черный
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Рисуем яблоко (красное)
+            ctx.fillStyle = '#ff4d4d';
+            ctx.fillRect(appleX * gridSize, appleY * gridSize, gridSize - 2, gridSize - 2);
+
+            // Рисуем змейку
+            ctx.fillStyle = 'lime';
+            for (let i = 0; i < trail.length; i++) {
+                // Эффект исчезновения хвоста
+                if (trail[i] == null) continue; 
+                
+                ctx.fillRect(trail[i].x * gridSize, trail[i].y * gridSize, gridSize - 2, gridSize - 2);
+
+                // Проверка: врезались ли мы в свой хвост?
+                if (trail[i].x === playerX && trail[i].y === playerY) {
+                    tailLength = 5;
+                    score = 0;
+                    scoreElement.innerText = score;
+                }
+            }
+
+            // Добавляем текущую позицию в историю хвоста
+            trail.push({ x: playerX, y: playerY });
+            
+            // Удаляем старую часть хвоста, если длина больше нужной
+            while (trail.length > tailLength) {
+                trail.shift();
+            }
+
+            // Проверка: съели ли яблоко?
+            if (appleX === playerX && appleY === playerY) {
+                tailLength++;
+                score++;
+                scoreElement.innerText = score;
+                
+                // Случайное новое место для яблока
+                appleX = Math.floor(Math.random() * tileCount);
+                appleY = Math.floor(Math.random() * tileCount);
+            }
+        }
+
+        // Обработка нажатий клавиш
+        document.addEventListener('keydown', keyDownEvent);
+
+        function keyDownEvent(e) {
+            switch (e.keyCode) {
+                case 37: // Влево
+                    if (velocityX !== 1) { velocityX = -1; velocityY = 0; }
+                    break;
+                case 38: // Вверх
+                    if (velocityY !== 1) { velocityX = 0; velocityY = -1; }
+                    break;
+                case 39: // Вправо
+                    if (velocityX !== -1) { velocityX = 1; velocityY = 0; }
+                    break;
+                case 40: // Вниз
+                    if (velocityY !== -1) { velocityX = 0; velocityY = 1; }
+                    break;
+            }
+        }
+
+        // Запуск при загрузке страницы
+        startGame();
+    </script>
+</body>
+</html>
