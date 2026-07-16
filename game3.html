@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Neon Highway Racer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.2);
+            border: 4px solid #333;
+        }
+
+        canvas {
+            background-color: #3a5f0b; /* Цвет травы */
+            display: block;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+
+        h1 { margin: 0; font-style: italic; text-shadow: 2px 2px #ff0055; color: #fff; }
+        p { margin: 5px 0; color: #aaa; font-size: 14px; }
+        
+        .speedometer {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ff0055;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+        
+        /* Эффект глитча при ускорении */
+        .turbo-mode {
+            animation: glitch 0.1s infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(2px, 0); }
+            50% { transform: translate(-2px, 0); }
+            100% { transform: translate(0, 0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="640" height="360"></canvas>
+        
+        <div class="ui-layer">
+            <h1>NEON RACER</h1>
+            <p>Управление: Стрелки или WASD</p>
+            <p style="color: #ff4d4d">Избегай красных блоков!</p>
+        </div>
+
+        <div class="speedometer" id="speedDisplay">0 km/h</div>
+    </div>
+
+<script>
+/**
+ * NEON HIGHWAY RACER ENGINE
+ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const speedDisplay = document.getElementById('speedDisplay');
+
+// --- КОНФИГУРАЦИЯ ---
+const FPS = 60;
+const MAX_SPEED = 120; // Максимальная скорость игры
+const ACCELERATION = 0.8;
+const BRAKING = 1.5;
+const FRICTION = 0.98; // Сопротивление воздуха (торможение на месте)
+const TURN_SPEED = 0.04;
+
+// --- ИГРОВЫЕ ПЕРЕМЕННЫЕ ---
+let speed = 0;
+let playerX = canvas.width / 2;
+let playerY = canvas.height - 100;
+let targetPlayerX = playerX; // Куда стремимся
+let isGameOver = false;
+
+// --- КАРТА МИРА (Простая плоскость с холмами) ---
+const terrainFeatures = []; // Хранит координаты деревьев и гор
+
+function spawnFeature() {
+    const type = Math.random() > 0.7 ? 'mountain' : 'tree';
+    terrainFeatures.push({
+        x: Math.random() * canvas.width,
+        y: -100, // Начинает за экраном сверху
+        z: 1,     // Глубина (чем больше, тем ближе)
+        type: type,
+        scale: Math.floor(Math.random() * 5 + 3) 
+    });
+}
+
+// Генерируем начальные объекты
+for(let i=0; i<20; i++) spawnFeature();
+
+// --- ФУНКЦИИ ОТРИСОВКИ ---
+
+function drawCar(x, y, isPlayer) {
+    ctx.save();
+    
+    // Тень
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.beginPath();
+    ctx.arc(x + 25, y + 80, 35, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Колеса
+    ctx.fillStyle = "#111";
+    const wobble = isPlayer ? (Date.now() / 10 % 4) : 0; // Вибрация колес
+    
+    // Задние колеса
+    ctx.fillRect(x + 15 - wobble, y + 60, 25, 30);
+    ctx.fillRect(x + 80 - wobble, y + 60, 25, 30);
+
+    // Передние колеса (поворачиваются)
+    const turn = isPlayer ? Math.sin(Date.now() / 100) * (speed / MAX_SPEED) : 0; 
+    ctx.save();
+    ctx.translate(x + 36, y + 58);
+    ctx.rotate(turn * 2); // Наклон корпуса при повороте
+    
+    // Корпус машины (Тракторная/Ретро форма)
+    ctx.fillStyle = isPlayer ? "#00ffff" : getRandomColor(); // Цвет врагов/объектов
+    
+    // Основной блок
+    ctx.fillRect(-35, -20, 70, 60);
+    
+    // Кабина (маленькая)
+    ctx.fillStyle = "#111"; // Стекло
+    ctx.fillRect(15, -40, 10, 30);
+
+    // Декоративный спойлер
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.fillRect(-38, -25, 6, 20);
+
+    ctx.restore();
+
+    // Фары (если игрок и едет быстро)
+    if(isPlayer && speed > 40) {
+        ctx.globalCompositeOperation = 'lighter';
+        const gradient = ctx.createLinearGradient(x, y, x+50, y-10);
+        gradient.addColorStop(0, "rgba(255, 255, 255, 0.8)");
+        gradient.addColorStop(1, "rgba(0, 255, 255, 0.2)");
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(x + 5, y - 45); // Левая фара
+        ctx.lineTo(x + 5, y - 90);
+        ctx.lineTo(x + 20, y - 45);
+
+        ctx.moveTo(x + 35, y - 45); // Правая фара
+        ctx.lineTo(x + 35, y - 90);
+        ctx.lineTo(x + 50, y - 45);
+        
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
+    }
+
+    ctx.restore();
+}
+
+function drawBackground() {
+    // 1. Небо (Градиент)
+    let gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#0d0d2b");
+    gradient.addColorStop(1, "#24244e");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Горизонт (Ванishing point) - псевдо-3D эффект
+    let horizonY = canvas.height / 2;
+    
+    // Линия горизонта
+    ctx.fillStyle = "#1a1a3a";
+    ctx.fillRect(0, horizonY, canvas.width, 2);
+
+    // 3. Параллакс объекты (Горы и деревья)
+    for(let i = terrainFeatures.length - 1; i >= 0; i--) {
+        let f = terrainFeatures[i];
+        
+        // Логика движения мира: чем больше Z, тем быстрее двигается объект
+        let moveFactor = (canvas.width - playerX) / canvas.width * 3; 
+        if(speed > 0) f.z -= speed * 2 * (f.type === 'mountain' ? 0.5 : 1); // Горы медленнее, деревья быстрее
+
+        // Удаление старых объектов
+        if(f.y > canvas.height + 100) {
+            terrainFeatures.splice(i, 1);
+        }
+
+        // Отрисовка объекта
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        
+        // Масштабирование (размер зависит от "глубины" и скорости)
+        let scale = f.scale * (speed / MAX_SPEED + 0.5); 
+        
+        if(f.type === 'tree') {
+            drawTree(scale);
+        } else {
+            drawMountain(scale);
+        }
+
+        ctx.restore();
+    }
+}
+
+// Рисует дерево (процедурно)
+function drawTree(size) {
+    // Ствол
+    ctx.fillStyle = "#3e2723";
+    ctx.fillRect(-size/4, -size, size/2, size/1.5);
+    
+    // Листва (круги)
+    ctx.fillStyle = "#006400"; // Темно зеленый
+    ctx.beginPath();
+    ctx.arc(0, -size*0.8, size, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+// Рисует холм
+function drawMountain(size) {
+    ctx.fillStyle = "#1a237e"; // Темно-синий/фиолетовый в тени
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    // Простая волна для холма
+    ctx.bezierCurveTo(-size, -size*1.5, size*2, -size*2.5, 0, -size * 3);
+    ctx.lineTo(size, -size);
+    ctx.fill();
+    
+    // Снежная шапка (белое)
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.arc(0, -size*1.2, size/2, Math.PI, 0);
+    ctx.fill();
+}
+
+function update() {
+    if(isGameOver) return;
+
+    // Ускорение / Торможение
+    if (keys['ArrowRight'] || keys['d']) speed += ACCELERATION;
+    if (keys['ArrowLeft'] || keys['a']) {
+        speed -= ACCELERATION * 0.5; // Поворот тоже немного тормозит
+        targetPlayerX -= 2; 
+    } else if (keys['ArrowLeft'] || keys['a']) {
+         // Если едем на инерции и не жмем газ, но жмем влево
+    }
+    
+    if ((keys['ArrowLeft'] || keys['d']) || (keys['ArrowRight'] || keys['a'])) targetPlayerX += 1;
+
+    // Обновление координат X с учетом инерции
+    if (speed > 0) {
+        let dx = (targetPlayerX - playerX) * FRICTION;
+        speed -= BRAKING; // Тормозим при повороте
+        
+        playerX += dx;
+
+        // Ограничение стенкой экрана
+        if(playerX < 40) { playerX = 40; targetPlayerX = 40; speed -= ACCELERATION; }
+        if(playerX > canvas.width - 40) { playerX = canvas.width - 40; targetPlayerX = canvas.width - 40; speed -= ACCELERATION; }
+        
+        // Нормальное движение
+        if(speed < MAX_SPEED && speed > 0) playerX += dx * 1.5;
+    } else {
+        playerX += (targetPlayerX - playerX) * FRICTION;
+    }
+
+    // Обновление UI
+    let kmh = Math.floor(speed * 1.2);
+    speedDisplay.innerText = kmh + " km/h";
+    
+    if(kmh > 90) {
+        canvas.classList.add('turbo-mode');
+    } else {
+        canvas.classList.remove('turbo-mode');
+    }
+
+    // Спавн объектов
+    if(Math.random() < 0.05) spawnFeature();
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawBackground();
+
+    // Рисуем игрока
+    drawCar(playerX, playerY, true);
+
+    requestAnimationFrame(() => {
+        update();
+        draw();
+    });
+}
+
+// --- УПРАВЛЕНИЕ ---
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key] = true);
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+// Старт
+update();
+draw();
+
+</script>
+</body>
+</html>
